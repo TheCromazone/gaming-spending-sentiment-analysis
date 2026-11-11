@@ -260,8 +260,12 @@ class GamingSpendingAnalyzer:
 
         # Use NLTK VADER if available, otherwise use lightweight implementation
         if NLTK_AVAILABLE:
-            self.sia = SentimentIntensityAnalyzer()
-            logger.info("Using NLTK VADER sentiment analyzer")
+            try:
+                self.sia = SentimentIntensityAnalyzer()
+                logger.info("Using NLTK VADER sentiment analyzer")
+            except LookupError:
+                self.sia = SimpleSentimentAnalyzer()
+                logger.warning("NLTK VADER lexicon not installed; using lightweight fallback")
         else:
             self.sia = SimpleSentimentAnalyzer()
             logger.info("Using lightweight fallback sentiment analyzer")
