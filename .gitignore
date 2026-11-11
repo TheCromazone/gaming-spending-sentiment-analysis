@@ -1,0 +1,15 @@
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.DS_Store
+.env
+.env.*
+!.env.example
+
+# Local inputs and generated analysis artifacts
+/synthetic_gaming_data.csv
+/reddit_gaming_spending_data.csv
+/analysis_results.csv
+/visualizations/

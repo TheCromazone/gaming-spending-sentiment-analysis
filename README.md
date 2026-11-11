@@ -1,6 +1,8 @@
 # Gaming Spending Sentiment Analysis
 
-A comprehensive data science project that empirically tests behavioral economics theses about loot boxes vs battle passes using Reddit spending discussions and sentiment analysis.
+A data-science pipeline for exploring behavioral economics hypotheses about loot boxes and battle passes through spending discussions and sentiment analysis.
+
+**Default runs use generated synthetic posts.** These exercise the pipeline and charts; their correlations and p-values are not evidence about real players or validation of the thesis. No collected Reddit dataset is included.
 
 ## Overview
 
@@ -10,7 +12,7 @@ This project analyzes self-reported gaming spending patterns from Reddit communi
 2. **Battle passes** enable more rational spending decisions due to predictable, guaranteed rewards
 3. Loss aversion language correlates with higher reported spending on loot boxes
 
-This project empirically tests these claims using sentiment analysis and behavioral pattern detection on Reddit posts from major gaming communities.
+The code can analyze a supplied Reddit CSV with sentiment analysis and behavioral pattern detection. Empirical testing requires a separately collected, documented dataset; the bundled generator is a demonstration fixture.
 
 ## Theoretical Framework
 
@@ -43,7 +45,7 @@ Players discussing loot boxes show higher loss aversion language, which correlat
 ## Project Structure
 
 ```
-gaming-spending-analysis/
+gaming-spending-sentiment-analysis/
 ├── scraper.py              # Reddit PRAW scraper with rate limiting
 ├── analyzer.py             # Main analysis engine with VADER sentiment analysis
 ├── sample_data.py          # Synthetic data generator (350+ posts)
@@ -62,25 +64,31 @@ gaming-spending-analysis/
 ## Installation
 
 ### Requirements
-- Python 3.8+
-- pip
+- Python and pip. The pinned NumPy/pandas/SciPy stack was installed and checked with Python 3.9; newer Python releases may require dependency updates.
 
 ### Setup
 
-1. Clone or navigate to the project directory:
+1. Clone the project, or start in an existing checkout:
 ```bash
-cd gaming-spending-analysis
+git clone https://github.com/TheCromazone/gaming-spending-sentiment-analysis.git
+cd gaming-spending-sentiment-analysis
 ```
 
-2. Install dependencies:
+2. Create an environment and install the pinned dependencies:
 ```bash
-pip install -r requirements.txt
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install -r requirements.txt
 ```
 
-3. Download VADER sentiment lexicon (one-time):
+On Windows, activate with `.venv\Scripts\Activate.ps1` instead.
+
+3. Optionally download the VADER lexicon:
 ```bash
 python -c "import nltk; nltk.download('vader_lexicon')"
 ```
+
+If NLTK or its lexicon is unavailable, the analyzer logs that it is using its lightweight keyword fallback. This avoids a required runtime download, but the fallback is a different scoring method; record which analyzer produced research outputs.
 
 ## Usage
 
@@ -98,7 +106,7 @@ python analyzer.py
 
 This generates:
 - 350+ realistic Reddit posts with behavioral patterns
-- Sentiment analysis using VADER
+- Sentiment analysis using VADER when its lexicon is installed, otherwise the lightweight fallback
 - Statistical correlations and hypothesis tests
 - 5 publication-quality visualizations
 - CSV file with detailed results
@@ -107,7 +115,7 @@ This generates:
 
 To scrape real data from Reddit:
 
-1. **Create Reddit API credentials** (free):
+1. **Configure Reddit API access**:
    - Visit https://www.reddit.com/prefs/apps
    - Create a "script" application
    - Note your `client_id` and `client_secret`
@@ -119,10 +127,21 @@ export REDDIT_CLIENT_SECRET="your_client_secret"
 python scraper.py
 ```
 
-3. **Analyze**:
-```bash
-python analyzer.py
+3. **Analyze the scraper's CSV explicitly**:
+```python
+from analyzer import GamingSpendingAnalyzer
+
+analyzer = GamingSpendingAnalyzer(data_path="reddit_gaming_spending_data.csv")
+analyzer.load_data()
+results = analyzer.analyze_posts()
+statistics = analyzer.compute_statistics(results)
+analyzer.create_visualizations(results, statistics)
+analyzer.save_results_csv(results)
 ```
+
+Run this snippet from the repository root after verifying the CSV exists. `python analyzer.py` selects `synthetic_gaming_data.csv`, and `load_data()` generates synthetic data if its requested file is missing. Do not treat a missing-input fallback as a successful real-data run. For an existing CSV, include a `text` column; `post_id` and `subreddit` preserve source identifiers.
+
+The scraper is a separate, opt-in network operation and was not used in the offline checks. Keep credentials in your environment. The default scraper CSV, generated demo CSV, analysis results, and chart directory are ignored by Git; custom input filenames need their own ignore entry or storage outside the checkout.
 
 The scraper fetches posts from:
 - **r/FIFA** - FIFA Ultimate Team (pack-based loot boxes)
@@ -215,7 +234,7 @@ Based on the behavioral economics framework:
 
 ### Example Output
 
-When you run `python analyzer.py`, you'll see:
+The following is illustrative output, not a reproducible benchmark. The generator is random, so counts, spending means, and significance change between runs:
 
 ```
 ======================================================================
@@ -286,8 +305,10 @@ The scraper can be extended to:
 
 To avoid re-scraping:
 ```python
-# Load previously scraped data
-data = GamingSpendingAnalyzer.load_from_csv('reddit_gaming_spending_data.csv')
+from analyzer import GamingSpendingAnalyzer
+
+analyzer = GamingSpendingAnalyzer(data_path='reddit_gaming_spending_data.csv')
+data = analyzer.load_data()
 ```
 
 ## Validation & Limitations
@@ -295,8 +316,8 @@ data = GamingSpendingAnalyzer.load_from_csv('reddit_gaming_spending_data.csv')
 ### Strengths
 - VADER sentiment analysis validated on social media text
 - Behavioral pattern detection based on established economics literature
-- Synthetic data preserves realistic patterns while enabling reproducibility
-- Statistical significance testing with hypothesis verification
+- Synthetic data enables offline pipeline testing without Reddit credentials
+- Statistical tests summarize the selected input; they do not verify a hypothesis on their own
 
 ### Limitations
 - **Self-report bias**: Spending amounts are self-reported, not verified
@@ -304,7 +325,7 @@ data = GamingSpendingAnalyzer.load_from_csv('reddit_gaming_spending_data.csv')
 - **Temporal bias**: Recent posts may reflect current trends (seasonal passes vs loot boxes)
 - **Sentiment analysis limitations**: VADER doesn't capture context-dependent irony
 - **Causality**: Correlations don't prove causation between loss aversion language and spending
-- **Sample representativeness**: Synthetic data matches patterns but may not capture outliers
+- **Synthetic data**: Templates and sampling rules are assumptions, not observations. Results from generated posts cannot establish population effects
 
 ### Recommendations for Production Use
 1. Validate spending amounts against in-game transaction records (with user consent)
@@ -317,9 +338,9 @@ data = GamingSpendingAnalyzer.load_from_csv('reddit_gaming_spending_data.csv')
 
 This project operationalizes the behavioral economics theories presented in "The Transition from Loot Boxes to Battle Passes" (Cromaz, 2023) by:
 
-1. **Testing core hypotheses empirically**: Quantifying the relationship between loss aversion language and reported spending
+1. **Preparing hypothesis tests**: Quantifying the relationship between loss aversion language and reported spending in a supplied dataset
 2. **Operationalizing concepts**: Converting abstract behavioral economics concepts into measurable linguistic patterns
-3. **Providing evidence**: Using real behavioral data (Reddit discussions) to validate theoretical predictions
+3. **Separating evidence from fixtures**: Real-data claims require collected Reddit discussions and a documented sampling method; synthetic demonstrations do not provide that evidence
 4. **Creating reproducible analysis**: Enabling others to extend this methodology to new data or games
 
 The analysis demonstrates that behavioral economics concepts (loss aversion, FOMO, sunk cost) can be measured through text analysis, providing a bridge between economic theory and data science methods.
@@ -361,7 +382,7 @@ This project demonstrates:
 - **Research Integration**: Connecting behavioral economics theory to empirical data science
 
 The synthetic data generator is particularly useful because it:
-- Provides reproducible, privacy-respecting test data
+- Provides privacy-respecting test data; set a random seed when a repeatable fixture is needed
 - Mimics real behavioral patterns from gaming communities
 - Enables local testing without API credentials
 - Serves as a template for other behavioral economics projects

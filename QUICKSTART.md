@@ -1,98 +1,60 @@
-# Quick Start Guide
+# Quick start: offline synthetic demonstration
 
-## 30-Second Setup
+Use the pinned environment with Python 3.9, the version used for the installation and pipeline checks. Newer Python versions may need dependency updates.
 
 ```bash
-cd gaming-spending-analysis
-python sample_data.py        # Generate synthetic dataset (takes 2 seconds)
-python analyzer.py           # Run complete analysis (takes 10 seconds)
+git clone https://github.com/TheCromazone/gaming-spending-sentiment-analysis.git
+cd gaming-spending-sentiment-analysis
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install -r requirements.txt
+python sample_data.py
+python analyzer.py
 ```
 
-This generates:
-- **analysis_results.csv** - Detailed analysis of all 350+ posts
-- **visualizations/*.png** - 5 publication-quality charts
+If the repository is already cloned, start with environment creation. On Windows, activate with `.venv\Scripts\Activate.ps1`.
 
-## What You Get
+The default run needs no Reddit credentials. It creates these local, Git-ignored outputs:
 
-### Output Data Files
-1. **synthetic_gaming_data.csv** - 350 realistic Reddit posts with behavioral patterns
-2. **analysis_results.csv** - Analysis results including sentiment scores, behavioral patterns, spending amounts
+| Output | Contents |
+| --- | --- |
+| `synthetic_gaming_data.csv` | 350 generated posts |
+| `analysis_results.csv` | Sentiment, spending extraction, and behavioral labels |
+| `visualizations/` | Five PNG charts for the default sample |
 
-### Visualizations (5 charts)
-1. **sentiment_distribution.png** - How many posts are positive/neutral/negative
-2. **spending_by_model.png** - Spending amounts in loot boxes vs battle passes
-3. **behavioral_patterns.png** - Which behavioral economics patterns appear most
-4. **loss_aversion_spending.png** - Key finding: loss aversion language vs spending amounts
-5. **sentiment_by_model.png** - Sentiment scores by monetization model
+Run from the repository root so the command-line entry point finds the generated CSV. `python sample_data.py` replaces that CSV with a new random sample. Results and charts are also overwritten by later runs.
 
-## Key Finding
+## Interpret the output
 
-The analysis tests the thesis hypothesis: **Loss aversion language correlates with higher spending**.
+The templates and random sampling rules create the demonstration data. A correlation or small p-value on those posts does **not** establish a real-world effect or validate the thesis. Numerical examples in older reports describe particular synthetic runs and will not necessarily match a new run.
 
-From the synthetic data analysis:
-```
-Mean spending (Loss Aversion language): $240.18
-Mean spending (No Loss Aversion): $174.41
-T-test p-value: 0.0431 (STATISTICALLY SIGNIFICANT)
+The analyzer uses NLTK VADER if its lexicon is installed. Otherwise it logs a warning and uses the bundled lightweight sentiment fallback. To opt into VADER, download its data once:
+
+```bash
+python -c "import nltk; nltk.download('vader_lexicon')"
 ```
 
-This supports the thesis: players discussing loot boxes with regret/loss language report 37% higher spending amounts.
+Record the scoring method when comparing results; the fallback and VADER are different analyzers.
 
-## Understanding the Behavioral Patterns
+## Verify without network access
 
-Posts are classified into 4 behavioral economics categories:
+```bash
+python -m unittest discover -s tests -v
+```
 
-- **Loss Aversion** (25%): "wasted $X", "regret spending", "bad luck" - indicates players experiencing/recounting losses
-- **FOMO** (20%): "limited time", "everyone had it", "miss out" - temporal scarcity pressure
-- **Sunk Cost** (20%): "already spent $X", "can't stop now" - past spending justifies future spending
-- **Rational** (35%): "fair price", "good value" - cost-benefit analysis
+The tests cover positive and negative fallback scoring, including the case where NLTK is installed but its lexicon is missing. The offline pipeline was also checked with 350 generated rows, an analysis CSV, and five chart files. That checks execution, not the validity of an economic conclusion.
 
-## Sentiment Analysis Method
+For a headless environment, run charts with `MPLBACKEND=Agg python analyzer.py` on macOS/Linux.
 
-Uses VADER (Valence Aware Dictionary and sEntiment Reasoner):
-- **Positive** (compound ≥ 0.05): "love", "amazing", "great deal"
-- **Negative** (compound ≤ -0.05): "regret", "wasted", "hate"
-- **Neutral** (between): No strong emotional language
+## Analyze collected data
 
-## Expected Results
+Follow [Using Real Reddit Data](README.md#using-real-reddit-data). The scraper is a separate network operation requiring configured Reddit API access.
 
-The synthetic data is designed to test the thesis claims:
-1. Loot box posts show more loss aversion language
-2. Battle pass posts show more rational framing
-3. Loss aversion language correlates with higher spending
-
-## Connecting to the Thesis
-
-This analysis operationalizes "The Transition from Loot Boxes to Battle Passes" (Cromaz, 2023):
-- **Loot boxes**: Randomized outcomes trigger loss aversion, psychological chasing behavior
-- **Battle passes**: Predictable, guaranteed rewards enable rational spending decisions
-
-The sentiment and behavioral pattern analysis empirically validates these behavioral economics predictions.
-
-## Next Steps
-
-- **Real data**: Follow README.md instructions to scrape actual Reddit data using PRAW
-- **Extended analysis**: Modify analyzer.py to test additional hypotheses
-- **Cross-game comparison**: Run the same analysis on different gaming communities
-- **Longitudinal study**: Track individual users over time to measure causal spending effects
+Pass `reddit_gaming_spending_data.csv` explicitly to `GamingSpendingAnalyzer(data_path=...)`. Running `python analyzer.py` alone still selects the synthetic file. A missing CSV causes a synthetic fallback, so verify the requested file and the log before interpreting a run as collected data.
 
 ## Troubleshooting
 
-**"No module named pandas"** or similar:
-```bash
-pip install pandas numpy matplotlib
-# For advanced analysis:
-pip install scipy scikit-learn
-# For NLTK VADER (optional, has fallback):
-pip install nltk
-```
-
-**Visualizations not creating?**
-- Check that visualizations/ directory exists (created automatically)
-- Verify matplotlib is installed: `python -c "import matplotlib; print('OK')"`
-
-**Want to regenerate synthetic data?**
-```bash
-python sample_data.py  # Creates new synthetic_gaming_data.csv
-python analyzer.py     # Re-analyzes it
-```
+- **Missing package:** activate the environment and rerun `python -m pip install -r requirements.txt`.
+- **Installation fails on a new Python release:** use the verified Python 3.9 path, or review and test dependency updates in a separate environment.
+- **Unexpected results:** confirm the input filename and analyzer choice in the log. Generated samples vary between runs.
+- **Missing charts:** check the error output and the writable `visualizations/` directory, which is created automatically.
